@@ -137,13 +137,13 @@
 
         <!-- 任務詳細頁面 -->
         <div id="detailView" class="card hidden">
-            <button style="background:none; border:none; color:var(--primary-color); cursor:pointer;" onclick="showMain()">← 返回任務清單</button>
+            <button style="background:none; border:none; color:var(--primary-color); cursor:pointer; font-size:16px;" onclick="showMain()">← 返回任務清單</button>
             <h2 id="cpTitle" style="margin-top:8px;"></h2>
             <p id="cpSubject" style="font-weight:bold; color:var(--accent-color);"></p>
             <p id="cpDesc"></p>
 
             <div id="verificationArea">
-                <!-- 自動動態載入驗證元件（上傳相片/影片或文字） -->
+                <!-- 動態載入驗證元件 -->
             </div>
 
             <button class="btn btn-success" onclick="submitChallenge()">提交並完成本站挑戰</button>
@@ -221,15 +221,11 @@
                 item.onclick = () => openDetail(cp.id);
                 
                 item.innerHTML = `
-                    
-
-                        ${cp.name}
-                        
-${cp.subject}
-
-                    
-
-                    ${isDone ? '已完成' : '未挑戰'}
+                    <div>
+                        <strong>${cp.name}</strong>
+                        <div style="font-size:12px; color:#718096;">${cp.subject}</div>
+                    </div>
+                    <span class="cp-badge ${isDone ? 'completed' : ''}">${isDone ? '已完成' : '未挑戰'}</span>
                 `;
                 listEl.appendChild(item);
             });
@@ -249,15 +245,14 @@ ${cp.subject}
             const area = document.getElementById('verificationArea');
             if(cp.type === 'media') {
                 area.innerHTML = `
-                    請拍攝/上傳相片或影片存證：
-                    
-                    
-
+                    <label style="font-weight:bold; display:block; margin-bottom:8px;">請拍攝/上傳相片或影片存證：</label>
+                    <input type="file" id="mediaInput" accept="image/*,video/*" style="display:block; width:100%; margin-bottom:12px;" onchange="previewMedia(event)">
+                    <div id="mediaPreview"></div>
                 `;
             } else {
                 area.innerHTML = `
-                    請輸入驗證答案：
-                    
+                    <label style="font-weight:bold; display:block; margin-bottom:8px;">請輸入驗證答案：</label>
+                    <input type="text" id="textInput" placeholder="在此輸入答案" style="display:block; width:100%;">
                 `;
             }
         }
@@ -268,9 +263,9 @@ ${cp.subject}
                 const preview = document.getElementById('mediaPreview');
                 const url = URL.createObjectURL(file);
                 if(file.type.startsWith('image/')) {
-                    preview.innerHTML = ``;
+                    preview.innerHTML = `<img src="${url}" class="preview-img">`;
                 } else {
-                    preview.innerHTML = ``;
+                    preview.innerHTML = `<video src="${url}" controls style="width:100%; margin-top:10px; border-radius:6px;"></video>`;
                 }
             }
         }
