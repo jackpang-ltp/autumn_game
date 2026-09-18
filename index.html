@@ -60,6 +60,7 @@
             margin-top: 10px;
         }
         .btn-success { background-color: var(--success-color); }
+        .btn:disabled { background-color: #a0aec0; cursor: not-allowed; }
         input, select, textarea {
             width: 100%;
             padding: 10px;
@@ -142,15 +143,16 @@
             <p id="cpSubject" style="font-weight:bold; color:var(--accent-color);"></p>
             <p id="cpDesc"></p>
 
-            <div id="verificationArea">
-                <!-- 動態載入驗證元件 -->
-            </div>
+            <div id="verificationArea"></div>
 
-            <button class="btn btn-success" onclick="submitChallenge()">提交並完成本站挑戰</button>
+            <button id="submitBtn" class="btn btn-success" onclick="submitChallenge()">提交並完成本站挑戰</button>
         </div>
     </div>
 
     <script>
+        // ⚠️ 請在此處貼上你從 Apps Script 部署獲得的 Web App URL
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxn-tN2AeosVs3hBZJfSIKI4iADqPg1KLUGEgUeGTYRs-ALj6Y7zL6MTBHORNAPjlze/exec";
+
         const checkpoints = [
             { id: 1, name: "CP01 中秋詩詞飛花令", subject: "中文科", desc: "全組圍成一圈，錄製一段 15 秒影片，每人輪流背誦一句含有「月」字古詩詞。", type: "media" },
             { id: 2, name: "CP02 Alphabet Mooncake", subject: "英文科", desc: "在白板上記錄 10 個與中秋相關的英文單字（首字母不重複），拍攝白板作品。", type: "media" },
@@ -270,8 +272,16 @@
             }
         }
 
-        function submitChallenge() {
+        async function submitChallenge() {
             const cp = checkpoints.find(item => item.id === activeCPId);
+            const submitBtn = document.getElementById('submitBtn');
+            let payload = {
+                group: currentGroup,
+                leader: currentLeader,
+                cpId: cp.id,
+                cpName: cp.name,
+                type: cp.type
+            };
             
             if(cp.type === 'text') {
                 const val = document.getElementById('textInput').value.trim();
@@ -279,21 +289,51 @@
                     alert('答案不正確，請重新思考！');
                     return;
                 }
+                payload.answer = val;
             } else {
                 const fileInput = document.getElementById('mediaInput');
                 if(!fileInput.files || fileInput.files.length === 0) {
                     alert('請拍攝或上傳影片/照片存證！');
                     return;
                 }
+                const file = fileInput.files[0];
+                submitBtn.disabled = true;
+                submitBtn.innerText = "正在上傳至雲端後台...";
+
+                // 將檔案轉換為 Base64 字串傳送
+                payload.fileData = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+                payload.fileName = file.name;
+                payload.mimeType = file.type;
             }
 
-            if(!completedCPs.includes(activeCPId)) {
-                completedCPs.push(activeCPId);
-                localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
-            }
+            // 發送數據至 Google Apps Script
+            try {
+                if(GOOGLE_SCRIPT_URL !== "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE") {
+                    await fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                }
+                
+                if(!completedCPs.includes(activeCPId)) {
+                    completedCPs.push(activeCPId);
+                    localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
+                }
 
-            alert('🎉 恭喜！成功完成本站挑戰！');
-            showMain();
+                alert('🎉 恭喜！資料已成功同步上傳至後台，完成本站挑戰！');
+            } catch(err) {
+                alert('⚠️ 上傳至雲端失敗，請檢查網絡連線！');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "提交並完成本站挑戰";
+                showMain();
+            }
         }
     </script>
 </body>
