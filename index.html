@@ -28,15 +28,8 @@
             text-align: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        header h1 {
-            margin: 0;
-            font-size: 20px;
-        }
-        .container {
-            padding: 16px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
+        header h1 { margin: 0; font-size: 20px; }
+        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
         .card {
             background-color: var(--card-bg);
             border-radius: 8px;
@@ -85,22 +78,15 @@
             border-radius: 12px;
             font-size: 12px;
         }
-        .completed {
-            background-color: #c6f6d5;
-            color: #22543d;
-        }
+        .completed { background-color: #c6f6d5; color: #22543d; }
         .hidden { display: none; }
-        .preview-img {
-            max-width: 100%;
-            border-radius: 6px;
-            margin-top: 10px;
-        }
+        .preview-img { max-width: 100%; border-radius: 6px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1>🥮 教師中秋歷奇大挑戰 V1🌕</h1>
+        <h1>🥮 教師中秋歷奇大挑戰 🌕</h1>
         <div id="userInfo" style="font-size: 12px; margin-top: 4px;"></div>
     </header>
 
@@ -149,7 +135,7 @@
         </div>
     </div>
 
-    <!-- 隱藏表單與 Frame，徹底解決跨域 CORS 與傳輸卡死問題 -->
+    <!-- 隱藏表單與 Frame -->
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
     <form id="gasForm" action="" method="POST" target="hidden_iframe" style="display:none;">
         <input type="hidden" name="group" id="f_group">
@@ -164,7 +150,7 @@
     </form>
 
     <script>
-        // ⚠️ 請務必替換為你發佈的 Apps Script URL (結尾必須是 /exec)
+        // ⚠️ 請替換為你發佈的 Apps Script URL (結尾必須是 /exec)
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyHAvWEy2mpSKvtjXtEcU2unAAexG0pAWdWq_r3-XgEED0Lwyq_UfJ_AigmHk2AmpR_AQ/exec";
 
         const checkpoints = [
@@ -196,9 +182,7 @@
         let activeCPId = null;
 
         window.onload = function() {
-            if(currentGroup && currentLeader) {
-                showMain();
-            }
+            if(currentGroup && currentLeader) showMain();
         };
 
         function startAdventure() {
@@ -219,23 +203,19 @@
             document.getElementById('loginView').classList.add('hidden');
             document.getElementById('detailView').classList.add('hidden');
             document.getElementById('mainView').classList.remove('hidden');
-            
             document.getElementById('userInfo').innerText = `隊伍：第 ${currentGroup} 組 | 隊長：${currentLeader}`;
             document.getElementById('progressText').innerText = `${completedCPs.length}/${checkpoints.length}`;
-
             renderCPList();
         }
 
         function renderCPList() {
             const listEl = document.getElementById('cpList');
             listEl.innerHTML = '';
-            
             checkpoints.forEach(cp => {
                 const isDone = completedCPs.includes(cp.id);
                 const item = document.createElement('div');
                 item.className = 'cp-list-item';
                 item.onclick = () => openDetail(cp.id);
-                
                 item.innerHTML = `
                     <div>
                         <strong>${cp.name}</strong>
@@ -250,10 +230,8 @@
         function openDetail(id) {
             activeCPId = id;
             const cp = checkpoints.find(item => item.id === id);
-            
             document.getElementById('mainView').classList.add('hidden');
             document.getElementById('detailView').classList.remove('hidden');
-            
             document.getElementById('cpTitle').innerText = cp.name;
             document.getElementById('cpSubject').innerText = `學科：${cp.subject}`;
             document.getElementById('cpDesc').innerText = cp.desc;
@@ -261,8 +239,8 @@
             const area = document.getElementById('verificationArea');
             if(cp.type === 'media') {
                 area.innerHTML = `
-                    <label style="font-weight:bold; display:block; margin-bottom:8px;">請拍攝/上傳相片或影片存證：</label>
-                    <input type="file" id="mediaInput" accept="image/*,video/*" style="display:block; width:100%; margin-bottom:12px;" onchange="previewMedia(event)">
+                    <label style="font-weight:bold; display:block; margin-bottom:8px;">請拍攝/上傳相片存證：</label>
+                    <input type="file" id="mediaInput" accept="image/*" style="display:block; width:100%; margin-bottom:12px;" onchange="previewMedia(event)">
                     <div id="mediaPreview"></div>
                 `;
             } else {
@@ -278,19 +256,50 @@
             if(file) {
                 const preview = document.getElementById('mediaPreview');
                 const url = URL.createObjectURL(file);
-                if(file.type.startsWith('image/')) {
-                    preview.innerHTML = `<img src="${url}" class="preview-img">`;
-                } else {
-                    preview.innerHTML = `<video src="${url}" controls style="width:100%; margin-top:10px; border-radius:6px;"></video>`;
-                }
+                preview.innerHTML = `<img src="${url}" class="preview-img">`;
             }
+        }
+
+        // 前端圖片自動壓縮函數 (縮放至最長邊 1024px，品質 0.6)
+        function compressImage(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 1024;
+
+                        if (width > height) {
+                            if (width > max_size) {
+                                height *= max_size / width;
+                                width = max_size;
+                            }
+                        } else {
+                            if (height > max_size) {
+                                width *= max_size / height;
+                                height = max_size;
+                            }
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        // 輸出 JPEG 壓縮檔
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
         }
 
         async function submitChallenge() {
             const cp = checkpoints.find(item => item.id === activeCPId);
             const submitBtn = document.getElementById('submitBtn');
-            
-            // 清空舊數據
+
             document.getElementById('f_answer').value = "";
             document.getElementById('f_fileData').value = "";
             document.getElementById('f_fileName').value = "";
@@ -312,37 +321,26 @@
             } else {
                 const fileInput = document.getElementById('mediaInput');
                 if(!fileInput.files || fileInput.files.length === 0) {
-                    alert('請拍攝或上傳影片/照片存證！');
+                    alert('請拍攝或上傳照片存證！');
                     return;
                 }
                 const file = fileInput.files[0];
 
-                // 限制過大檔案避免 Google Drive 上傳失敗
-                if(file.size > 15 * 1024 * 1024) {
-                    alert('⚠️ 檔案過大 (超過 15MB)，請拍攝照片或較短的影片後再上傳！');
-                    return;
-                }
-
                 submitBtn.disabled = true;
-                submitBtn.innerText = "正在上傳至雲端後台...";
+                submitBtn.innerText = "正在壓縮圖片並同步上傳...";
 
-                const fileBase64 = await new Promise(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
+                // 前端圖片壓縮
+                const compressedBase64 = await compressImage(file);
 
-                document.getElementById('f_fileData').value = fileBase64;
-                document.getElementById('f_fileName').value = file.name;
-                document.getElementById('f_mimeType').value = file.type;
+                document.getElementById('f_fileData').value = compressedBase64;
+                document.getElementById('f_fileName').value = "compressed_" + Date.now() + ".jpg";
+                document.getElementById('f_mimeType').value = "image/jpeg";
             }
 
-            // 使用傳統原生 Form 提交至隱藏 iframe，確保 100% 寫入 Google Sheet
             const form = document.getElementById('gasForm');
             form.action = GOOGLE_SCRIPT_URL;
             form.submit();
 
-            // 記錄本地進度
             if(!completedCPs.includes(activeCPId)) {
                 completedCPs.push(activeCPId);
                 localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
@@ -353,7 +351,7 @@
                 submitBtn.disabled = false;
                 submitBtn.innerText = "提交並完成本站挑戰";
                 showMain();
-            }, 1500);
+            }, 2000);
         }
     </script>
 </body>
