@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>中秋跨學科歷奇大挑戰 V2</title>
+    <title>中秋跨學科歷奇大挑戰</title>
     <style>
         :root {
             --primary-color: #1a365d;
@@ -100,7 +100,7 @@
 <body>
 
     <header>
-        <h1>🥮 教師中秋歷奇大挑戰 V4🌕</h1>
+        <h1>🥮 教師中秋歷奇大挑戰 🌕</h1>
         <div id="userInfo" style="font-size: 12px; margin-top: 4px;"></div>
     </header>
 
@@ -149,9 +149,23 @@
         </div>
     </div>
 
+    <!-- 隱藏表單與 Frame，徹底解決跨域 CORS 與傳輸卡死問題 -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+    <form id="gasForm" action="" method="POST" target="hidden_iframe" style="display:none;">
+        <input type="hidden" name="group" id="f_group">
+        <input type="hidden" name="leader" id="f_leader">
+        <input type="hidden" name="cpId" id="f_cpId">
+        <input type="hidden" name="cpName" id="f_cpName">
+        <input type="hidden" name="type" id="f_type">
+        <input type="hidden" name="answer" id="f_answer">
+        <input type="hidden" name="fileData" id="f_fileData">
+        <input type="hidden" name="fileName" id="f_fileName">
+        <input type="hidden" name="mimeType" id="f_mimeType">
+    </form>
+
     <script>
-        // ⚠️ 請在此處貼上你從 Apps Script 部署獲得的 Web App URL
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzkqWAQp1CbjOUpXAvZUhV8I4MdsEAhlvw_VibAPy4m3pQzNzCXTL9h1SsJRGQDA88uow/exec";
+        // ⚠️ 請務必替換為你發佈的 Apps Script URL (結尾必須是 /exec)
+        const GOOGLE_SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
 
         const checkpoints = [
             { id: 1, name: "CP01 中秋詩詞飛花令", subject: "中文科", desc: "全組圍成一圈，錄製一段 15 秒影片，每人輪流背誦一句含有「月」字古詩詞。", type: "media" },
@@ -272,78 +286,75 @@
             }
         }
 
-async function submitChallenge() {
-    const cp = checkpoints.find(item => item.id === activeCPId);
-    const submitBtn = document.getElementById('submitBtn');
-    
-    // 改用 FormData 避免被跨域擋下
-    let formData = new FormData();
-    formData.append('group', currentGroup);
-    formData.append('leader', currentLeader);
-    formData.append('cpId', cp.id);
-    formData.append('cpName', cp.name);
-    formData.append('type', cp.type);
-    
-    if(cp.type === 'text') {
-        const val = document.getElementById('textInput').value.trim();
-        if(val !== cp.answer) {
-            alert('答案不正確，請重新思考！');
-            return;
-        }
-        formData.append('answer', val);
-    } else {
-        const fileInput = document.getElementById('mediaInput');
-        if(!fileInput.files || fileInput.files.length === 0) {
-            alert('請拍攝或上傳影片/照片存證！');
-            return;
-        }
-        const file = fileInput.files[0];
-        
-        // 限制上傳大小避免逾時 (超過 10MB 提醒)
-        if(file.size > 10 * 1024 * 1024) {
-            alert('⚠️ 檔案過大 (超過 10MB)，請拍攝照片或較短的影片後再上傳！');
-            return;
-        }
+        async function submitChallenge() {
+            const cp = checkpoints.find(item => item.id === activeCPId);
+            const submitBtn = document.getElementById('submitBtn');
+            
+            // 清空舊數據
+            document.getElementById('f_answer').value = "";
+            document.getElementById('f_fileData').value = "";
+            document.getElementById('f_fileName').value = "";
+            document.getElementById('f_mimeType').value = "";
 
-        submitBtn.disabled = true;
-        submitBtn.innerText = "正在上傳至雲端後台...";
+            document.getElementById('f_group').value = currentGroup;
+            document.getElementById('f_leader').value = currentLeader;
+            document.getElementById('f_cpId').value = cp.id;
+            document.getElementById('f_cpName').value = cp.name;
+            document.getElementById('f_type').value = cp.type;
 
-        const fileBase64 = await new Promise(resolve => {
-            const reader = new FileReader();
-            reader.onload = e => resolve(e.target.result);
-            reader.readAsDataURL(file);
-        });
+            if(cp.type === 'text') {
+                const val = document.getElementById('textInput').value.trim();
+                if(val !== cp.answer) {
+                    alert('答案不正確，請重新思考！');
+                    return;
+                }
+                document.getElementById('f_answer').value = val;
+            } else {
+                const fileInput = document.getElementById('mediaInput');
+                if(!fileInput.files || fileInput.files.length === 0) {
+                    alert('請拍攝或上傳影片/照片存證！');
+                    return;
+                }
+                const file = fileInput.files[0];
 
-        formData.append('fileData', fileBase64);
-        formData.append('fileName', file.name);
-        formData.append('mimeType', file.type);
-    }
+                // 限制過大檔案避免 Google Drive 上傳失敗
+                if(file.size > 15 * 1024 * 1024) {
+                    alert('⚠️ 檔案過大 (超過 15MB)，請拍攝照片或較短的影片後再上傳！');
+                    return;
+                }
 
-    try {
-        if(GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbzkqWAQp1CbjOUpXAvZUhV8I4MdsEAhlvw_VibAPy4m3pQzNzCXTL9h1SsJRGQDA88uow/exec") {
-            // 使用 URLSearchParams 發送 POST 請求
-            const params = new URLSearchParams(formData);
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params.toString()
-            });
+                submitBtn.disabled = true;
+                submitBtn.innerText = "正在上傳至雲端後台...";
+
+                const fileBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(e.target.result);
+                    reader.readAsDataURL(file);
+                });
+
+                document.getElementById('f_fileData').value = fileBase64;
+                document.getElementById('f_fileName').value = file.name;
+                document.getElementById('f_mimeType').value = file.type;
+            }
+
+            // 使用傳統原生 Form 提交至隱藏 iframe，確保 100% 寫入 Google Sheet
+            const form = document.getElementById('gasForm');
+            form.action = GOOGLE_SCRIPT_URL;
+            form.submit();
+
+            // 記錄本地進度
+            if(!completedCPs.includes(activeCPId)) {
+                completedCPs.push(activeCPId);
+                localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
+            }
+
+            setTimeout(() => {
+                alert('🎉 恭喜！資料已成功同步上傳至後台，完成本站挑戰！');
+                submitBtn.disabled = false;
+                submitBtn.innerText = "提交並完成本站挑戰";
+                showMain();
+            }, 1500);
         }
-        
-        if(!completedCPs.includes(activeCPId)) {
-            completedCPs.push(activeCPId);
-            localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
-        }
-
-        alert('🎉 恭喜！資料已成功同步上傳至後台，完成本站挑戰！');
-    } catch(err) {
-        alert('⚠️ 上傳至雲端失敗，請檢查網絡連線！');
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerText = "提交並完成本站挑戰";
-        showMain();
-    }
-}
+    </script>
 </body>
 </html>
