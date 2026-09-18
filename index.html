@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>中秋跨學科歷奇大挑戰</title>
+    <style>
+        :root {
+            --primary-color: #1a365d;
+            --accent-color: #d69e2e;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --success-color: #38a169;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 60px;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            padding: 16px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 20px;
+        }
+        .container {
+            padding: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+        .btn-success { background-color: var(--success-color); }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .cp-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+        }
+        .cp-badge {
+            background-color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .completed {
+            background-color: #c6f6d5;
+            color: #22543d;
+        }
+        .hidden { display: none; }
+        .preview-img {
+            max-width: 100%;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🥮 教師中秋歷奇大挑戰 🌕</h1>
+        <div id="userInfo" style="font-size: 12px; margin-top: 4px;"></div>
+    </header>
+
+    <div class="container">
+        <!-- 登入視窗 -->
+        <div id="loginView" class="card">
+            <h2 style="margin-top:0;">隊伍登入</h2>
+            <label for="groupSelect">請選擇隊伍號碼：</label>
+            <select id="groupSelect">
+                <option value="">-- 請選擇組別 --</option>
+                <script>
+                    for(let i=1; i<=12; i++) {
+                        document.write(`<option value="${i}">第 ${i} 組</option>`);
+                    }
+                </script>
+            </select>
+
+            <label for="leaderName">隊長姓名：</label>
+            <input type="text" id="leaderName" placeholder="輸入隊長姓名">
+
+            <button class="btn" onclick="startAdventure()">開始歷奇遊戲</button>
+        </div>
+
+        <!-- 地圖與任務清單 -->
+        <div id="mainView" class="hidden">
+            <div class="card" style="text-align: center; background-color: #feebc8;">
+                <h3 style="margin:0;">目前完成度：<span id="progressText">0/20</span></h3>
+                <p style="font-size: 12px; margin: 4px 0 0 0;">請游走各 Checkpoint 進行自主打卡挑戰</p>
+            </div>
+
+            <div class="card" style="padding: 0;">
+                <div id="cpList"></div>
+            </div>
+        </div>
+
+        <!-- 任務詳細頁面 -->
+        <div id="detailView" class="card hidden">
+            <button style="background:none; border:none; color:var(--primary-color); cursor:pointer;" onclick="showMain()">← 返回任務清單</button>
+            <h2 id="cpTitle" style="margin-top:8px;"></h2>
+            <p id="cpSubject" style="font-weight:bold; color:var(--accent-color);"></p>
+            <p id="cpDesc"></p>
+
+            <div id="verificationArea">
+                <!-- 自動動態載入驗證元件（上傳相片/影片或文字） -->
+            </div>
+
+            <button class="btn btn-success" onclick="submitChallenge()">提交並完成本站挑戰</button>
+        </div>
+    </div>
+
+    <script>
+        const checkpoints = [
+            { id: 1, name: "CP01 中秋詩詞飛花令", subject: "中文科", desc: "全組圍成一圈，錄製一段 15 秒影片，每人輪流背誦一句含有「月」字古詩詞。", type: "media" },
+            { id: 2, name: "CP02 Alphabet Mooncake", subject: "英文科", desc: "在白板上記錄 10 個與中秋相關的英文單字（首字母不重複），拍攝白板作品。", type: "media" },
+            { id: 3, name: "CP03 港式中秋集體回憶牆", subject: "公民與社會發展科", desc: "每人寫下一個傳統中秋習俗貼於牆上，全組與貼紙合照。", type: "media" },
+            { id: 4, name: "CP04 月相排序與身體擺放", subject: "地理科", desc: "全組用肢體排成：新月→上弦月→滿月→下弦月，拍下合照。", type: "media" },
+            { id: 5, name: "CP05 月餅通脹與價值排序", subject: "經濟科", desc: "將現場 5 款月餅依市場價格由高至低排列並拍照。", type: "media" },
+            { id: 6, name: "CP06 Fiesta De La Luna", subject: "西班牙語", desc: "錄音/錄影全組大聲唸出 3 句西班牙語中秋祝福語。", type: "media" },
+            { id: 7, name: "CP07 人肉幾何圓與直角", subject: "數學科", desc: "全組用身體手腳拉手拼出圓形與 90 度直角拍照。", type: "media" },
+            { id: 8, name: "CP08 影子長度與高度角", subject: "科學科", desc: "題目：中秋夜月亮升至最高空時，人的影子長度為？（請輸入：最短）", type: "text", answer: "最短" },
+            { id: 9, name: "CP09 熱量卡路里大計算", subject: "科學科 (生物/家政)", desc: "小明吃了半個雙黃蓮蓉月餅(400kcal)，若每分鐘跑步消耗 10kcal，需要跑步多少分鐘？", type: "text", answer: "40" },
+            { id: 10, name: "CP10 中秋數字密碼鏈", subject: "數學科", desc: "推算數列：8, 15, 24, 35, ? 的下一個數字是？", type: "text", answer: "48" },
+            { id: 11, name: "CP11 手繪中秋集體創意畫", subject: "視覺藝術科", desc: "每人在紙上各畫一筆，共同組合成中秋畫作拍照。", type: "media" },
+            { id: 12, name: "CP12 《月亮代表我的心》", subject: "音樂科", desc: "全組錄製 10 秒影片，齊聲合唱《月亮代表我的心》副歌。", type: "media" },
+            { id: 13, name: "CP13 神話定格劇 (Tableau)", subject: "表演藝術", desc: "維持「嫦娥奔月」或「後羿射日」定格姿勢 3 秒拍照。", type: "media" },
+            { id: 14, name: "CP14 人像剪影「月下影子」", subject: "視覺藝術科", desc: "利用現場燈光在牆上擺出至少 2 隻玉兔手影拍照。", type: "media" },
+            { id: 15, name: "CP15 千斤頂「搭橋賞月」", subject: "體育科", desc: "全組手拉手向後傾斜維持平衡 5 秒，錄影存證。", type: "media" },
+            { id: 16, name: "CP16 接力傳遞「中秋月餅」", subject: "體育科", desc: "用乒乓球拍接力傳遞乒乓球不落地，錄影存證。", type: "media" },
+            { id: 17, name: "CP17 報紙搭建「玉兔避難塔」", subject: "STEM", desc: "3 分鐘內用報紙搭建獨立站立高塔，拍下成果照片。", type: "media" },
+            { id: 18, name: "CP18 Mid-Autumn Slogan", subject: "CSD + 英文科", desc: "錄影全組齊聲大喊團隊原創中秋雙語口號。", type: "media" },
+            { id: 19, name: "CP19 極簡環保月餅盒標語", subject: "經濟科 + 視藝科", desc: "白板寫下 10 字以內環保包裝標語並合照。", type: "media" },
+            { id: 20, name: "CP20 燈謎雙人跳躍解密", subject: "中文科 + 體育科", desc: "兩人跳躍同時回答燈謎「靜夜思（打一成語）」，答案：有機可乘。錄影存證。", type: "media" }
+        ];
+
+        let currentGroup = localStorage.getItem('cp_group') || '';
+        let currentLeader = localStorage.getItem('cp_leader') || '';
+        let completedCPs = JSON.parse(localStorage.getItem('cp_completed') || '[]');
+        let activeCPId = null;
+
+        window.onload = function() {
+            if(currentGroup && currentLeader) {
+                showMain();
+            }
+        };
+
+        function startAdventure() {
+            const g = document.getElementById('groupSelect').value;
+            const l = document.getElementById('leaderName').value;
+            if(!g || !l) {
+                alert('請完整選擇組別與輸入隊長姓名！');
+                return;
+            }
+            currentGroup = g;
+            currentLeader = l;
+            localStorage.setItem('cp_group', g);
+            localStorage.setItem('cp_leader', l);
+            showMain();
+        }
+
+        function showMain() {
+            document.getElementById('loginView').classList.add('hidden');
+            document.getElementById('detailView').classList.add('hidden');
+            document.getElementById('mainView').classList.remove('hidden');
+            
+            document.getElementById('userInfo').innerText = `隊伍：第 ${currentGroup} 組 | 隊長：${currentLeader}`;
+            document.getElementById('progressText').innerText = `${completedCPs.length}/${checkpoints.length}`;
+
+            renderCPList();
+        }
+
+        function renderCPList() {
+            const listEl = document.getElementById('cpList');
+            listEl.innerHTML = '';
+            
+            checkpoints.forEach(cp => {
+                const isDone = completedCPs.includes(cp.id);
+                const item = document.createElement('div');
+                item.className = 'cp-list-item';
+                item.onclick = () => openDetail(cp.id);
+                
+                item.innerHTML = `
+                    
+
+                        ${cp.name}
+                        
+${cp.subject}
+
+                    
+
+                    ${isDone ? '已完成' : '未挑戰'}
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function openDetail(id) {
+            activeCPId = id;
+            const cp = checkpoints.find(item => item.id === id);
+            
+            document.getElementById('mainView').classList.add('hidden');
+            document.getElementById('detailView').classList.remove('hidden');
+            
+            document.getElementById('cpTitle').innerText = cp.name;
+            document.getElementById('cpSubject').innerText = `學科：${cp.subject}`;
+            document.getElementById('cpDesc').innerText = cp.desc;
+
+            const area = document.getElementById('verificationArea');
+            if(cp.type === 'media') {
+                area.innerHTML = `
+                    請拍攝/上傳相片或影片存證：
+                    
+                    
+
+                `;
+            } else {
+                area.innerHTML = `
+                    請輸入驗證答案：
+                    
+                `;
+            }
+        }
+
+        function previewMedia(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const preview = document.getElementById('mediaPreview');
+                const url = URL.createObjectURL(file);
+                if(file.type.startsWith('image/')) {
+                    preview.innerHTML = ``;
+                } else {
+                    preview.innerHTML = ``;
+                }
+            }
+        }
+
+        function submitChallenge() {
+            const cp = checkpoints.find(item => item.id === activeCPId);
+            
+            if(cp.type === 'text') {
+                const val = document.getElementById('textInput').value.trim();
+                if(val !== cp.answer) {
+                    alert('答案不正確，請重新思考！');
+                    return;
+                }
+            } else {
+                const fileInput = document.getElementById('mediaInput');
+                if(!fileInput.files || fileInput.files.length === 0) {
+                    alert('請拍攝或上傳影片/照片存證！');
+                    return;
+                }
+            }
+
+            if(!completedCPs.includes(activeCPId)) {
+                completedCPs.push(activeCPId);
+                localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
+            }
+
+            alert('🎉 恭喜！成功完成本站挑戰！');
+            showMain();
+        }
+    </script>
+</body>
+</html>
