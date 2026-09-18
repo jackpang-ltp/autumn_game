@@ -272,69 +272,78 @@
             }
         }
 
-        async function submitChallenge() {
-            const cp = checkpoints.find(item => item.id === activeCPId);
-            const submitBtn = document.getElementById('submitBtn');
-            let payload = {
-                group: currentGroup,
-                leader: currentLeader,
-                cpId: cp.id,
-                cpName: cp.name,
-                type: cp.type
-            };
-            
-            if(cp.type === 'text') {
-                const val = document.getElementById('textInput').value.trim();
-                if(val !== cp.answer) {
-                    alert('答案不正確，請重新思考！');
-                    return;
-                }
-                payload.answer = val;
-            } else {
-                const fileInput = document.getElementById('mediaInput');
-                if(!fileInput.files || fileInput.files.length === 0) {
-                    alert('請拍攝或上傳影片/照片存證！');
-                    return;
-                }
-                const file = fileInput.files[0];
-                submitBtn.disabled = true;
-                submitBtn.innerText = "正在上傳至雲端後台...";
-
-                // 將檔案轉換為 Base64 字串傳送
-                payload.fileData = await new Promise(resolve => {
-                    const reader = new FileReader();
-                    reader.onload = e => resolve(e.target.result);
-                    reader.readAsDataURL(file);
-                });
-                payload.fileName = file.name;
-                payload.mimeType = file.type;
-            }
-
-            // 發送數據至 Google Apps Script
-            try {
-                if(GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbzkqWAQp1CbjOUpXAvZUhV8I4MdsEAhlvw_VibAPy4m3pQzNzCXTL9h1SsJRGQDA88uow/exec") {
-                    await fetch(GOOGLE_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                }
-                
-                if(!completedCPs.includes(activeCPId)) {
-                    completedCPs.push(activeCPId);
-                    localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
-                }
-
-                alert('🎉 恭喜！資料已成功同步上傳至後台，完成本站挑戰！');
-            } catch(err) {
-                alert('⚠️ 上傳至雲端失敗，請檢查網絡連線！');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "提交並完成本站挑戰";
-                showMain();
-            }
+async function submitChallenge() {
+    const cp = checkpoints.find(item => item.id === activeCPId);
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // 改用 FormData 避免被跨域擋下
+    let formData = new FormData();
+    formData.append('group', currentGroup);
+    formData.append('leader', currentLeader);
+    formData.append('cpId', cp.id);
+    formData.append('cpName', cp.name);
+    formData.append('type', cp.type);
+    
+    if(cp.type === 'text') {
+        const val = document.getElementById('textInput').value.trim();
+        if(val !== cp.answer) {
+            alert('答案不正確，請重新思考！');
+            return;
         }
-    </script>
+        formData.append('answer', val);
+    } else {
+        const fileInput = document.getElementById('mediaInput');
+        if(!fileInput.files || fileInput.files.length === 0) {
+            alert('請拍攝或上傳影片/照片存證！');
+            return;
+        }
+        const file = fileInput.files[0];
+        
+        // 限制上傳大小避免逾時 (超過 10MB 提醒)
+        if(file.size > 10 * 1024 * 1024) {
+            alert('⚠️ 檔案過大 (超過 10MB)，請拍攝照片或較短的影片後再上傳！');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = "正在上傳至雲端後台...";
+
+        const fileBase64 = await new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+
+        formData.append('fileData', fileBase64);
+        formData.append('fileName', file.name);
+        formData.append('mimeType', file.type);
+    }
+
+    try {
+        if(GOOGLE_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbzkqWAQp1CbjOUpXAvZUhV8I4MdsEAhlvw_VibAPy4m3pQzNzCXTL9h1SsJRGQDA88uow/exec") {
+            // 使用 URLSearchParams 發送 POST 請求
+            const params = new URLSearchParams(formData);
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            });
+        }
+        
+        if(!completedCPs.includes(activeCPId)) {
+            completedCPs.push(activeCPId);
+            localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
+        }
+
+        alert('🎉 恭喜！資料已成功同步上傳至後台，完成本站挑戰！');
+    } catch(err) {
+        alert('⚠️ 上傳至雲端失敗，請檢查網絡連線！');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "提交並完成本站挑戰";
+        showMain();
+    }
+}
 </body>
 </html>
