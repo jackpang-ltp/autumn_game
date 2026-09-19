@@ -82,13 +82,22 @@
         .completed { background-color: #c6f6d5; color: #22543d; }
         .hidden { display: none; }
         .preview-img { max-width: 100%; border-radius: 6px; margin-top: 10px; }
+        .route-hint {
+            font-size: 12px;
+            color: #742a2a;
+            background-color: #fff5f5;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 6px;
+            border-left: 3px solid #e53e3e;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>羅定邦中學 教師發展日</h1>
-        <p>Law Ting Pong Secondary School - Staff Development Day</p>
+        <p>Law Ting Pong Secondary School - Teacher Development Day</p>
         <p>🥮 中秋跨學科歷奇大挑戰 Mid-Autumn Adventure 🌕</p>
         <div id="userInfo" style="font-size: 12px; margin-top: 6px; color: #f6ad55;"></div>
     </header>
@@ -117,7 +126,10 @@
         <div id="mainView" class="hidden">
             <div class="card" style="text-align: center; background-color: #feebc8;">
                 <h3 style="margin:0; font-size:16px;">目前進度 Progress：<span id="progressText">0/20</span></h3>
-                <p style="font-size: 12px; margin: 4px 0 0 0;">請游走各 Checkpoint 尋找解鎖碼並挑戰<br>Explore checkpoints and find station codes!</p>
+                <div class="route-hint">
+                    📍 已為你的組別設定**專屬分流路線**，請直接由上至下依序挑戰！<br>
+                    Custom route assigned! Please complete stations from top to bottom.
+                </div>
             </div>
 
             <div class="card" style="padding: 0;">
@@ -188,6 +200,7 @@
         let currentLeader = localStorage.getItem('cp_leader') || '';
         let completedCPs = JSON.parse(localStorage.getItem('cp_completed') || '[]');
         let activeCPId = null;
+        let sortedCheckpoints = [];
 
         window.onload = function() {
             if(currentGroup && currentLeader) showMain();
@@ -207,26 +220,46 @@
             showMain();
         }
 
+        // 核心功能：根據組別重排 20 個 Checkpoint 的路線順序
+        function getSortedRoute(groupNum) {
+            const groupStartMap = {
+                1: 1,  2: 3,  3: 5,  4: 7,
+                5: 9,  6: 11, 7: 13, 8: 15,
+                9: 17, 10: 19, 11: 2, 12: 4
+            };
+            
+            const startId = groupStartMap[groupNum] || 1;
+            const startIndex = checkpoints.findIndex(cp => cp.id === startId);
+            
+            // 將陣列從起始位置切開並重新組合（循環分流）
+            return [...checkpoints.slice(startIndex), ...checkpoints.slice(0, startIndex)];
+        }
+
         function showMain() {
             document.getElementById('loginView').classList.add('hidden');
             document.getElementById('detailView').classList.add('hidden');
             document.getElementById('mainView').classList.remove('hidden');
             document.getElementById('userInfo').innerText = `組別/Group: 第 ${currentGroup} 組 | 隊長/Leader: ${currentLeader}`;
             document.getElementById('progressText').innerText = `${completedCPs.length}/${checkpoints.length}`;
+            
+            // 計算該組別的專屬路線順序
+            sortedCheckpoints = getSortedRoute(parseInt(currentGroup));
             renderCPList();
         }
 
         function renderCPList() {
             const listEl = document.getElementById('cpList');
             listEl.innerHTML = '';
-            checkpoints.forEach(cp => {
+            
+            // 按照排序後的路線進行渲染
+            sortedCheckpoints.forEach((cp, index) => {
                 const isDone = completedCPs.includes(cp.id);
                 const item = document.createElement('div');
                 item.className = 'cp-list-item';
                 item.onclick = () => openDetail(cp.id);
                 item.innerHTML = `
                     <div>
-                        <strong>${cp.name}</strong>
+                        <strong>站點 ${index + 1}: ${cp.name}</strong>
                         <div style="font-size:12px; color:#718096;">${cp.subject}</div>
                     </div>
                     <span class="cp-badge ${isDone ? 'completed' : ''}">${isDone ? '已完成 Done' : '未挑戰 Open'}</span>
