@@ -442,25 +442,35 @@
         }
 
         function compressImage(file) {
-            return new Promise((resolve) => {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    reject(new Error("No file selected"));
+                    return;
+                }
                 const reader = new FileReader();
+                reader.onerror = () => reject(new Error("FileReader error"));
                 reader.onload = (e) => {
                     const img = new Image();
+                    img.onerror = () => reject(new Error("Image loading error"));
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const max_size = 1024;
-                        if (width > height) {
-                            if (width > max_size) { height *= max_size / width; width = max_size; }
-                        } else {
-                            if (height > max_size) { width *= max_size / height; height = max_size; }
+                        try {
+                            const canvas = document.createElement('canvas');
+                            let width = img.width;
+                            let height = img.height;
+                            const max_size = 1024;
+                            if (width > height) {
+                                if (width > max_size) { height = Math.round(height * (max_size / width)); width = max_size; }
+                            } else {
+                                if (height > max_size) { width = Math.round(width * (max_size / height)); height = max_size; }
+                            }
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+                            resolve(canvas.toDataURL('image/jpeg', 0.6));
+                        } catch (err) {
+                            reject(err);
                         }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6));
                     };
                     img.src = e.target.result;
                 };
@@ -474,6 +484,8 @@
             if (!currentLeader) currentLeader = safeGetStorage('cp_leader', '');
 
             const cp = checkpoints.find(item => item.id === activeCPId);
+            if (!cp) return;
+
             const inputCode = document.getElementById('stationCodeInput').value.trim().toUpperCase();
 
             // 1. 校對站點解鎖碼
@@ -485,6 +497,7 @@
             const submitBtn = document.getElementById('submitBtn');
             let answerVal = "";
             let fileDataVal = "";
+            let cleanBase64 = "";
             let fileNameVal = "";
             let mimeTypeVal = "";
 
@@ -506,17 +519,29 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 正在處理照片...`;
 
-                fileDataVal = await compressImage(file);
-                fileNameVal = "LTPSS_G" + currentGroup + "_" + Date.now() + ".jpg";
-                mimeTypeVal = "image/jpeg";
+                try {
+                    fileDataVal = await compressImage(file);
+                    // 關鍵修復：分離 Data URI 標頭，提供純 Base64 字串給 Utilities.base64Decode 使用
+                    cleanBase64 = fileDataVal.includes(',') ? fileDataVal.split(',')[1] : fileDataVal;
+                    fileNameVal = "LTPSS_G" + currentGroup + "_CP" + cp.id + "_" + Date.now() + ".jpg";
+                    mimeTypeVal = "image/jpeg";
+                    answerVal = "Photo Upload: " + fileNameVal;
+                } catch (err) {
+                    console.error("Image processing error:", err);
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 提交答案完成本站 Submit`;
+                    showModal('照片處理失敗', '❌ 讀取照片失敗，請重新選擇照片或重新拍攝！', 'error');
+                    return;
+                }
             }
 
             // 3. 提交至 Google Apps Script 雲端
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 正在同步至雲端...`;
 
-            // 相容性數據包：包含 GAS 後端可能讀取的各種常用 key 欄位名稱
+            // 相容性數據包：提供純 Base64 與 Full Data URI，涵蓋各種 Apps Script 後端欄位名稱
             const payload = {
+                // 組別與隊長資訊
                 group: currentGroup,
                 groupNum: currentGroup,
                 groupNumber: currentGroup,
@@ -525,16 +550,39 @@
                 leaderName: currentLeader,
                 teamLeader: currentLeader,
                 name: currentLeader,
+
+                // 關卡與答案
                 cpId: cp.id,
                 cpName: cp.name,
                 type: cp.type,
                 answer: answerVal,
-                fileData: fileDataVal,
+
+                // 附件/照片數據 (純 Base64 與完整 Data URI 兼具，100% 相容各類 GAS 腳本)
+                fileData: cleanBase64,
+                fileDataUrl: fileDataVal,
+                fileUri: fileDataVal,
+                dataUrl: fileDataVal,
+                base64: cleanBase64,
+                base64Data: cleanBase64,
+                rawBase64: cleanBase64,
+                photo: cleanBase64,
+                photoData: cleanBase64,
+                attachment: cleanBase64,
+                image: cleanBase64,
+                imageData: cleanBase64,
+                file: cleanBase64,
+
+                // 檔名與 MIME 類型
                 fileName: fileNameVal,
-                mimeType: mimeTypeVal
+                filename: fileNameVal,
+                file_name: fileNameVal,
+                mimeType: mimeTypeVal,
+                mimetype: mimeTypeVal,
+                contentType: mimeTypeVal,
+                content_type: mimeTypeVal
             };
 
-            // 同時附帶 URL 查詢參數，防止 GAS 腳本使用 e.parameter 讀取
+            // URL 查詢參數（適合 e.parameter 讀取文字資訊）
             const queryParams = new URLSearchParams({
                 group: currentGroup,
                 groupNum: currentGroup,
@@ -545,7 +593,9 @@
                 cpId: cp.id,
                 cpName: cp.name,
                 type: cp.type,
-                answer: answerVal
+                answer: answerVal,
+                fileName: fileNameVal,
+                filename: fileNameVal
             });
 
             const targetUrl = GAS_SCRIPT_URL ? `${GAS_SCRIPT_URL}${GAS_SCRIPT_URL.includes('?') ? '&' : '?'}${queryParams.toString()}` : '';
@@ -574,7 +624,7 @@
             setTimeout(() => {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 提交答案完成本站 Submit`;
-                showModal('挑戰成功！', '🎉 恭喜完成本站挑戰！數據已紀錄。', 'success');
+                showModal('挑戰成功！', '🎉 恭喜完成本站挑戰！數據與相片已紀錄。', 'success');
                 showMain();
             }, 800);
         }
