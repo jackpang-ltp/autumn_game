@@ -98,7 +98,7 @@
                 <label for="leaderName" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                     隊長姓名 / Leader Name：
                 </label>
-                <input type="text" id="leaderName" placeholder="例如: 陳大文 Teacher Chan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all">
+                <input type="text" id="leaderName" placeholder="例如: 陳大文 Teacher Chan" onkeydown="if(event.key === 'Enter') startAdventure()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all">
             </div>
 
             <button onclick="startAdventure()" class="w-full accent-gradient text-white py-3 rounded-xl font-bold text-base shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
@@ -233,9 +233,35 @@
         // 🎯 嵌入 Google Apps Script Web App URL
         const GAS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhmGSMWg7-bTOZ46A_QZGdi35kTwMpD06oI2IFNA-gTy3P4uHJiwZFvyX4Idmg24nb/exec";
 
-        let currentGroup = localStorage.getItem('cp_group') || '';
-        let currentLeader = localStorage.getItem('cp_leader') || '';
-        let completedCPs = JSON.parse(localStorage.getItem('cp_completed') || '[]');
+        // Safe LocalStorage Access Helper (Prevents iframe DOMException crashes)
+        function safeGetStorage(key, defaultValue = '') {
+            try {
+                const item = localStorage.getItem(key);
+                return item !== null ? item : defaultValue;
+            } catch (e) {
+                console.warn('localStorage access denied or unavailable:', e);
+                return defaultValue;
+            }
+        }
+
+        function safeSetStorage(key, value) {
+            try {
+                localStorage.setItem(key, value);
+            } catch (e) {
+                console.warn('localStorage write failed:', e);
+            }
+        }
+
+        let currentGroup = safeGetStorage('cp_group', '');
+        let currentLeader = safeGetStorage('cp_leader', '');
+        let completedCPs = [];
+        try {
+            const rawCPs = safeGetStorage('cp_completed', '[]');
+            completedCPs = JSON.parse(rawCPs);
+            if (!Array.isArray(completedCPs)) completedCPs = [];
+        } catch (e) {
+            completedCPs = [];
+        }
         let activeCPId = null;
         let sortedCheckpoints = [];
         let currentFilter = 'all';
@@ -273,8 +299,8 @@
             }
             currentGroup = g;
             currentLeader = l;
-            localStorage.setItem('cp_group', g);
-            localStorage.setItem('cp_leader', l);
+            safeSetStorage('cp_group', g);
+            safeSetStorage('cp_leader', l);
             showMain();
         }
 
@@ -515,7 +541,7 @@
             // 紀錄本機進度
             if (!completedCPs.includes(activeCPId)) {
                 completedCPs.push(activeCPId);
-                localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
+                safeSetStorage('cp_completed', JSON.stringify(completedCPs));
             }
 
             setTimeout(() => {
@@ -563,6 +589,12 @@
 
         function executeResetGroup() {
             closeConfirmResetModal();
+            currentGroup = '';
+            currentLeader = '';
+            safeSetStorage('cp_group', '');
+            safeSetStorage('cp_leader', '');
+            if (document.getElementById('groupSelect')) document.getElementById('groupSelect').value = '';
+            if (document.getElementById('leaderName')) document.getElementById('leaderName').value = '';
             showLogin();
         }
     </script>
