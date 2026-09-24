@@ -457,7 +457,7 @@
                             const canvas = document.createElement('canvas');
                             let width = img.width;
                             let height = img.height;
-                            const max_size = 1024;
+                            const max_size = 800;
                             if (width > height) {
                                 if (width > max_size) { height = Math.round(height * (max_size / width)); width = max_size; }
                             } else {
@@ -467,7 +467,7 @@
                             canvas.height = height;
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
-                            resolve(canvas.toDataURL('image/jpeg', 0.6));
+                            resolve(canvas.toDataURL('image/jpeg', 0.5));
                         } catch (err) {
                             reject(err);
                         }
@@ -539,76 +539,45 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 正在同步至雲端...`;
 
-            // 相容性數據包：提供純 Base64 與 Full Data URI，涵蓋各種 Apps Script 後端欄位名稱
+            // 相容性數據包：涵蓋所有常見後端變數名稱
             const payload = {
-                // 組別與隊長資訊
                 group: currentGroup,
                 groupNum: currentGroup,
-                groupNumber: currentGroup,
                 team: currentGroup,
                 leader: currentLeader,
                 leaderName: currentLeader,
-                teamLeader: currentLeader,
-                name: currentLeader,
-
-                // 關卡與答案
                 cpId: cp.id,
                 cpName: cp.name,
                 type: cp.type,
                 answer: answerVal,
-
-                // 附件/照片數據 (純 Base64 與完整 Data URI 兼具，100% 相容各類 GAS 腳本)
                 fileData: cleanBase64,
                 fileDataUrl: fileDataVal,
-                fileUri: fileDataVal,
-                dataUrl: fileDataVal,
                 base64: cleanBase64,
-                base64Data: cleanBase64,
-                rawBase64: cleanBase64,
                 photo: cleanBase64,
-                photoData: cleanBase64,
-                attachment: cleanBase64,
                 image: cleanBase64,
-                imageData: cleanBase64,
                 file: cleanBase64,
-
-                // 檔名與 MIME 類型
+                attachment: cleanBase64,
                 fileName: fileNameVal,
                 filename: fileNameVal,
-                file_name: fileNameVal,
-                mimeType: mimeTypeVal,
-                mimetype: mimeTypeVal,
-                contentType: mimeTypeVal,
-                content_type: mimeTypeVal
+                mimeType: mimeTypeVal
             };
 
-            // URL 查詢參數（適合 e.parameter 讀取文字資訊）
-            const queryParams = new URLSearchParams({
-                group: currentGroup,
-                groupNum: currentGroup,
-                team: currentGroup,
-                leader: currentLeader,
-                leaderName: currentLeader,
-                name: currentLeader,
-                cpId: cp.id,
-                cpName: cp.name,
-                type: cp.type,
-                answer: answerVal,
-                fileName: fileNameVal,
-                filename: fileNameVal
-            });
-
-            const targetUrl = GAS_SCRIPT_URL ? `${GAS_SCRIPT_URL}${GAS_SCRIPT_URL.includes('?') ? '&' : '?'}${queryParams.toString()}` : '';
+            // 使用 URLSearchParams 發送 POST Body，使 GAS e.parameter 可以直接抓取 Base64 數據
+            const formBody = new URLSearchParams();
+            for (const key in payload) {
+                formBody.append(key, payload[key]);
+            }
+            formBody.append('payload', JSON.stringify(payload));
 
             try {
-                if (targetUrl) {
-                    await fetch(targetUrl, {
+                if (GAS_SCRIPT_URL) {
+                    await fetch(GAS_SCRIPT_URL, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
-                            'Content-Type': 'text/plain;charset=utf-8'
+                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
                         },
-                        body: JSON.stringify(payload)
+                        body: formBody.toString()
                     });
                 }
             } catch (err) {
