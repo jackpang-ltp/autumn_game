@@ -125,9 +125,9 @@
         <!-- 地圖與任務清單 -->
         <div id="mainView" class="hidden">
             <div class="card" style="text-align: center; background-color: #feebc8;">
-                <h3 style="margin:0; font-size:16px;">目前進度 Progress：<span id="progressText">0/12</span></h3>
+                <h3 style="margin:0; font-size:16px;">目前進度 Progress：<span id="progressText">0/20</span></h3>
                 <div class="route-hint">
-                    📍 已為第 <span id="routeGroupNum"></span> 組設定**專屬分流路線**，請直接由上至下依序挑戰！<br>
+                    📍 已為你的組別設定**專屬分流路線**，請直接由上至下依序挑戰！<br>
                     Custom route assigned! Please complete stations from top to bottom.
                 </div>
             </div>
@@ -212,11 +212,18 @@
             showMain();
         }
 
-        // 12 組對應 12 個 CP 的對稱分流（第 N 組從 CP N 開始）
+        // 核心功能：根據組別重排 20 個 Checkpoint 的路線順序
         function getSortedRoute(groupNum) {
-            const startId = parseInt(groupNum);
+            const groupStartMap = {
+                1: 1,  2: 3,  3: 5,  4: 7,
+                5: 9,  6: 11, 7: 13, 8: 15,
+                9: 17, 10: 19, 11: 2, 12: 4
+            };
+            
+            const startId = groupStartMap[groupNum] || 1;
             const startIndex = checkpoints.findIndex(cp => cp.id === startId);
-            if(startIndex === -1) return checkpoints;
+            
+            // 將陣列從起始位置切開並重新組合（循環分流）
             return [...checkpoints.slice(startIndex), ...checkpoints.slice(0, startIndex)];
         }
 
@@ -226,8 +233,8 @@
             document.getElementById('mainView').classList.remove('hidden');
             document.getElementById('userInfo').innerText = `組別/Group: 第 ${currentGroup} 組 | 隊長/Leader: ${currentLeader}`;
             document.getElementById('progressText').innerText = `${completedCPs.length}/${checkpoints.length}`;
-            document.getElementById('routeGroupNum').innerText = currentGroup;
             
+            // 計算該組別的專屬路線順序
             sortedCheckpoints = getSortedRoute(parseInt(currentGroup));
             renderCPList();
         }
@@ -236,6 +243,7 @@
             const listEl = document.getElementById('cpList');
             listEl.innerHTML = '';
             
+            // 按照排序後的路線進行渲染
             sortedCheckpoints.forEach((cp, index) => {
                 const isDone = completedCPs.includes(cp.id);
                 const item = document.createElement('div');
@@ -318,6 +326,7 @@
             const cp = checkpoints.find(item => item.id === activeCPId);
             const inputCode = document.getElementById('stationCodeInput').value.trim().toUpperCase();
 
+            // 1. 驗證站點解鎖碼（防作弊）
             if(inputCode !== cp.code) {
                 alert('❌ 解鎖碼不正確！請確認你已親臨該 Checkpoint 觀看海報！\nInvalid Station Code! Please check the poster at the checkpoint.');
                 return;
@@ -335,6 +344,7 @@
             document.getElementById('f_cpName').value = cp.name;
             document.getElementById('f_type').value = cp.type;
 
+            // 2. 驗證答案或圖片
             if(cp.type === 'text') {
                 const val = document.getElementById('textInput').value.trim();
                 if(val !== cp.answer) {
@@ -358,6 +368,7 @@
                 document.getElementById('f_mimeType').value = "image/jpeg";
             }
 
+            // 提交至 Google Apps Script
             const form = document.getElementById('gasForm');
             form.action = GOOGLE_SCRIPT_URL;
             form.submit();
@@ -368,10 +379,11 @@
             }
 
             setTimeout(() => {
+                alert('🎉 恭喜！資料已成功同步上傳，完成本站挑戰！\nSuccess! Challenge completed!');
                 submitBtn.disabled = false;
                 submitBtn.innerText = "提交並完成本站挑戰 Submit";
                 showMain();
-            }, 1200);
+            }, 2000);
         }
     </script>
 </body>
