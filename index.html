@@ -469,6 +469,10 @@
         }
 
         async function submitChallenge() {
+            // 保障機制：確保當前組別與隊長名稱正確讀取
+            if (!currentGroup) currentGroup = safeGetStorage('cp_group', '');
+            if (!currentLeader) currentLeader = safeGetStorage('cp_leader', '');
+
             const cp = checkpoints.find(item => item.id === activeCPId);
             const inputCode = document.getElementById('stationCodeInput').value.trim().toUpperCase();
 
@@ -511,9 +515,16 @@
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 正在同步至雲端...`;
 
+            // 相容性數據包：包含 GAS 後端可能讀取的各種常用 key 欄位名稱
             const payload = {
                 group: currentGroup,
+                groupNum: currentGroup,
+                groupNumber: currentGroup,
+                team: currentGroup,
                 leader: currentLeader,
+                leaderName: currentLeader,
+                teamLeader: currentLeader,
+                name: currentLeader,
                 cpId: cp.id,
                 cpName: cp.name,
                 type: cp.type,
@@ -523,9 +534,25 @@
                 mimeType: mimeTypeVal
             };
 
+            // 同時附帶 URL 查詢參數，防止 GAS 腳本使用 e.parameter 讀取
+            const queryParams = new URLSearchParams({
+                group: currentGroup,
+                groupNum: currentGroup,
+                team: currentGroup,
+                leader: currentLeader,
+                leaderName: currentLeader,
+                name: currentLeader,
+                cpId: cp.id,
+                cpName: cp.name,
+                type: cp.type,
+                answer: answerVal
+            });
+
+            const targetUrl = GAS_SCRIPT_URL ? `${GAS_SCRIPT_URL}${GAS_SCRIPT_URL.includes('?') ? '&' : '?'}${queryParams.toString()}` : '';
+
             try {
-                if (GAS_SCRIPT_URL) {
-                    await fetch(GAS_SCRIPT_URL, {
+                if (targetUrl) {
+                    await fetch(targetUrl, {
                         method: 'POST',
                         mode: 'no-cors',
                         headers: {
