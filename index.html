@@ -98,7 +98,7 @@
                 <label for="leaderName" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                     隊長姓名 / Leader Name：
                 </label>
-                <input type="text" id="leaderName" placeholder="例如: 陳大文 Teacher Chan" onkeydown="if(event.key === 'Enter') startAdventure()" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all">
+                <input type="text" id="leaderName" placeholder="例如: 陳大文 Teacher Chan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none transition-all">
             </div>
 
             <button onclick="startAdventure()" class="w-full accent-gradient text-white py-3 rounded-xl font-bold text-base shadow-lg shadow-amber-500/25 active:scale-[0.98] transition-transform flex items-center justify-center gap-2">
@@ -131,7 +131,7 @@
                 <i class="fa-solid fa-map-location-dot text-amber-600 text-base mt-0.5 shrink-0"></i>
                 <div class="leading-relaxed">
                     <strong>📍 第 <span id="routeGroupNum" class="text-amber-700 font-bold underline"></span> 組專屬路線已設定！</strong>
-                    <p class="text-amber-800/90 mt-0.5">系統已根據組別完成自動分流，請由上至下依序前往關卡挑戰！</p>
+                    <p class="text-amber-800/90 mt-0.5">請親臨現場關卡查閱海報，於主選單輸入「解鎖碼」以開啟該關卡題目！</p>
                 </div>
             </div>
 
@@ -143,7 +143,7 @@
             </div>
 
             <!-- 站點卡片列表 -->
-            <div id="cpList" class="space-y-2.5">
+            <div id="cpList" class="space-y-3">
                 <!-- Checkpoints dynamic injection -->
             </div>
         </div>
@@ -155,23 +155,24 @@
             </button>
 
             <div class="border-b border-slate-100 pb-3">
-                <span id="cpSubject" class="inline-block px-2.5 py-0.5 bg-amber-100 text-amber-800 font-bold text-xs rounded-md mb-1.5"></span>
+                <div class="flex items-center justify-between mb-1.5">
+                    <span id="cpSubject" class="inline-block px-2.5 py-0.5 bg-amber-100 text-amber-800 font-bold text-xs rounded-md"></span>
+                    <span id="cpUnlockedBadge" class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <i class="fa-solid fa-lock-open text-[10px]"></i> 已解鎖
+                    </span>
+                </div>
                 <h2 id="cpTitle" class="text-lg font-black text-slate-800"></h2>
             </div>
 
             <!-- 題目描述區 -->
-            <div id="cpDesc" class="text-sm text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200/60"></div>
-
-            <!-- Step 1: 解鎖碼 -->
-            <div class="bg-amber-50/60 p-3.5 rounded-xl border border-amber-200/70 space-y-2">
-                <label for="stationCodeInput" class="block text-xs font-bold text-amber-900 flex items-center justify-between">
-                    <span>🔑 步驟一：輸入站點解鎖碼 (Station Code)</span>
-                    <span class="text-[10px] text-amber-700 font-normal">查閱現場海報</span>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-1">
+                    <i class="fa-solid fa-circle-question text-amber-500"></i> 關卡題目 Question
                 </label>
-                <input type="text" id="stationCodeInput" placeholder="請輸入海報上的解鎖碼 (例如: MOON1)" class="w-full bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm font-mono font-bold uppercase text-slate-800 tracking-wider focus:ring-2 focus:ring-amber-500 focus:outline-none">
+                <div id="cpDesc" class="text-sm text-slate-800 leading-relaxed bg-amber-50/50 p-4 rounded-xl border border-amber-200/80 shadow-inner"></div>
             </div>
 
-            <!-- Step 2: 答題或上傳 -->
+            <!-- 答題或上傳 -->
             <div id="verificationArea" class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
                 <!-- Dynamically populated per checkpoint type -->
             </div>
@@ -205,7 +206,7 @@
                 <i class="fa-solid fa-triangle-exclamation"></i>
             </div>
             <h3 class="text-base font-bold text-slate-800">確認切換組別？</h3>
-            <p class="text-xs text-slate-600">切換組別將重新加載專屬路線，已完成的答題進度將保留在裝置中。</p>
+            <p class="text-xs text-slate-600">切換組別將重新加載專屬路線，已解鎖與完成的答題進度將保留在裝置中。</p>
             <div class="flex gap-2 pt-1">
                 <button onclick="executeResetGroup()" class="flex-1 bg-red-600 text-white font-bold text-xs py-2.5 rounded-xl">切換組別</button>
                 <button onclick="closeConfirmResetModal()" class="flex-1 bg-slate-100 text-slate-700 font-bold text-xs py-2.5 rounded-xl">取消</button>
@@ -213,11 +214,25 @@
         </div>
     </div>
 
+    <!-- 隱藏表單提交 (Cross-Origin Iframe Standard Fallback) -->
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+    <form id="gasForm" action="" method="POST" target="hidden_iframe" style="display:none;">
+        <input type="hidden" name="group" id="f_group">
+        <input type="hidden" name="leader" id="f_leader">
+        <input type="hidden" name="cpId" id="f_cpId">
+        <input type="hidden" name="cpName" id="f_cpName">
+        <input type="hidden" name="type" id="f_type">
+        <input type="hidden" name="answer" id="f_answer">
+        <input type="hidden" name="fileData" id="f_fileData">
+        <input type="hidden" name="fileName" id="f_fileName">
+        <input type="hidden" name="mimeType" id="f_mimeType">
+    </form>
+
     <script>
         // 12 個關卡數據配置
         const checkpoints = [
             { id: 1, name: "CP01 中秋詩詞飛花令", code: "MOON1", subject: "中文科 Chinese", desc: "詩句「海上升明月，____共此時」缺失的兩字是？<br><span class='text-xs text-slate-500'>Fill in the missing two words: '海上升明月，____共此時'</span>", type: "text", answer: "天涯" },
-            { id: 2, name: "CP02 Alphabet Mooncake", code: "LUNAR2", subject: "英文科 English", desc: "寫下 5 個以 <b>L, U, N, A, R</b> 開頭的中秋英文單字。可用手機工具寫下答案，再用截圖方法上傳。<br><span class='text-xs text-slate-500'>Write down 5 Mid-Autumn English words starting with L, U, N, A, and R. You can use mobile tools/notes to write your answers, then upload a screenshot.</span>", type: "media" },
+            { id: 2, name: "CP02 Alphabet Mooncake", code: "LUNAR2", subject: "英文科 English", desc: "在白板寫下 5 個以 <b>M, O, O, N, S</b> 開頭的中秋英文單字並全組合照。<br><span class='text-xs text-slate-500'>Write 5 Mid-Autumn words starting with M,O,O,N,S on whiteboard & take a group photo.</span>", type: "media" },
             { id: 3, name: "CP03 港式中秋集體回憶", code: "HERI3", subject: "CSD 公社科", desc: "香港大坑中秋節最具特色的國家級非物質文化遺產活動名稱是？（三字）<br><span class='text-xs text-slate-500'>What is the famous 3-character Tai Hang Mid-Autumn heritage event in HK?</span>", type: "text", answer: "舞火龍" },
             { id: 4, name: "CP04 月餅供求曲線", code: "ECON5", subject: "經濟科 Economics", desc: "當月餅原料價格上漲，供給曲線會向「左」還是「右」移動？<br><span class='text-xs text-slate-500'>When raw material prices rise, does the supply curve shift 'Left' or 'Right'?</span>", type: "text", answer: "左" },
             { id: 5, name: "CP05 西班牙語中秋", code: "SPAN6", subject: "西班牙語 Spanish", desc: "西班牙語中「El farol」的意思是什麼？（提示：與中秋有關，兩字）<br><span class='text-xs text-slate-500'>What does 'El farol' mean in Spanish? (Hint: Related to Mid-Autumn, 2 words in Chinese)</span>", type: "text", answer: "燈籠" },
@@ -227,42 +242,16 @@
             { id: 9, name: "CP09 神話定格劇", code: "DRAMA13", subject: "表演藝術 Performing Arts", desc: "全組維持「嫦娥奔月」或「後羿射日」的定格姿勢 3 秒拍照。<br><span class='text-xs text-slate-500'>Freeze pose as 'Chang'e Flying to Moon' or 'Hou Yi Shooting Suns' & take a photo.</span>", type: "media" },
             { id: 10, name: "CP10 月下影子戲", code: "SHADOW14", subject: "視藝科 Visual Arts", desc: "利用燈光在牆上投影出至少 2 隻「玉兔」的手影拍照。<br><span class='text-xs text-slate-500'>Create at least 2 Jade Rabbit hand shadows on the wall and take a photo.</span>", type: "media" },
             { id: 11, name: "CP11 乒乓球規例", code: "BALL16", subject: "體育科 Physical Edu", desc: "乒乓球（象徵圓月）標準比賽每局先得幾分者獲勝？（填純數字）<br><span class='text-xs text-slate-500'>How many points win a standard Table Tennis game? (Enter number)</span>", type: "text", answer: "11" },
-            { id: 12, name: "CP12 中秋燈謎解密", code: "RIDDLE20", subject: "中文 + 體育 Chin & PE", desc: "燈謎：「狼來了」（猜一水果）。<br><span class='text-xs text-slate-500'>Chinese Lantern Riddle: The wolf is coming (Guess a fruit)</span>", type: "text", answer: "楊桃" }
+            { id: 12, name: "CP12 中秋燈謎解密", code: "RIDDLE20", subject: "中文 + 體育 Chin & PE", desc: "燈謎：「靜夜思」（打一四字成語）。<br><span class='text-xs text-slate-500'>Chinese Riddle: 'Thoughts in the Quiet Night' (4-character idiom).</span>", type: "text", answer: "有機可乘" }
         ];
-
 
         // 🎯 嵌入 Google Apps Script Web App URL
         const GAS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhmGSMWg7-bTOZ46A_QZGdi35kTwMpD06oI2IFNA-gTy3P4uHJiwZFvyX4Idmg24nb/exec";
 
-        // Safe LocalStorage Access Helper (Prevents iframe DOMException crashes)
-        function safeGetStorage(key, defaultValue = '') {
-            try {
-                const item = localStorage.getItem(key);
-                return item !== null ? item : defaultValue;
-            } catch (e) {
-                console.warn('localStorage access denied or unavailable:', e);
-                return defaultValue;
-            }
-        }
-
-        function safeSetStorage(key, value) {
-            try {
-                localStorage.setItem(key, value);
-            } catch (e) {
-                console.warn('localStorage write failed:', e);
-            }
-        }
-
-        let currentGroup = safeGetStorage('cp_group', '');
-        let currentLeader = safeGetStorage('cp_leader', '');
-        let completedCPs = [];
-        try {
-            const rawCPs = safeGetStorage('cp_completed', '[]');
-            completedCPs = JSON.parse(rawCPs);
-            if (!Array.isArray(completedCPs)) completedCPs = [];
-        } catch (e) {
-            completedCPs = [];
-        }
+        let currentGroup = localStorage.getItem('cp_group') || '';
+        let currentLeader = localStorage.getItem('cp_leader') || '';
+        let unlockedCPs = JSON.parse(localStorage.getItem('cp_unlocked') || '[]');
+        let completedCPs = JSON.parse(localStorage.getItem('cp_completed') || '[]');
         let activeCPId = null;
         let sortedCheckpoints = [];
         let currentFilter = 'all';
@@ -300,8 +289,8 @@
             }
             currentGroup = g;
             currentLeader = l;
-            safeSetStorage('cp_group', g);
-            safeSetStorage('cp_leader', l);
+            localStorage.setItem('cp_group', g);
+            localStorage.setItem('cp_leader', l);
             showMain();
         }
 
@@ -363,46 +352,130 @@
             
             filtered.forEach((cp) => {
                 const isDone = completedCPs.includes(cp.id);
+                const isUnlocked = unlockedCPs.includes(cp.id) || isDone;
+                // 找出該關卡在目前分流路線中的序號
                 const orderIndex = sortedCheckpoints.findIndex(item => item.id === cp.id) + 1;
 
                 const card = document.createElement('div');
-                card.className = `p-3.5 rounded-xl border transition-all cursor-pointer flex justify-between items-center bg-white ${
+                card.className = `p-4 rounded-xl border transition-all bg-white shadow-sm space-y-3 ${
                     isDone 
-                    ? 'border-emerald-200 bg-emerald-50/30' 
-                    : 'border-slate-200 hover:border-amber-400 hover:shadow-md'
+                    ? 'border-emerald-200 bg-emerald-50/20' 
+                    : isUnlocked 
+                        ? 'border-amber-300 bg-amber-50/20'
+                        : 'border-slate-200'
                 }`;
-                card.onclick = () => openDetail(cp.id);
 
-                card.innerHTML = `
-                    <div class="space-y-0.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                                站點 ${orderIndex}
-                            </span>
-                            <span class="text-xs font-bold ${isDone ? 'text-emerald-800' : 'text-slate-800'}">
-                                ${cp.name}
+                if (isUnlocked) {
+                    // 已解鎖 / 已完成狀態：顯示關卡資訊與直接開啟按鈕
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="space-y-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+                                        站點 ${orderIndex}
+                                    </span>
+                                    <span class="text-xs font-bold ${isDone ? 'text-emerald-800' : 'text-slate-800'}">
+                                        ${cp.name}
+                                    </span>
+                                </div>
+                                <div class="text-[11px] font-medium text-slate-500">
+                                    ${cp.subject}
+                                </div>
+                            </div>
+                            <div>
+                                ${isDone 
+                                    ? `<span class="inline-flex items-center text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                        <i class="fa-solid fa-circle-check mr-1"></i> 已完成
+                                       </span>`
+                                    : `<span class="inline-flex items-center text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full border border-amber-200">
+                                        <i class="fa-solid fa-lock-open mr-1"></i> 已解鎖
+                                       </span>`
+                                }
+                            </div>
+                        </div>
+
+                        <button onclick="openDetail(${cp.id})" class="w-full py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                            isDone
+                            ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                            : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm'
+                        }">
+                            <span>${isDone ? '查看關卡題目與紀錄 View Question' : '進入關卡與作答 Enter Checkpoint'}</span>
+                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </button>
+                    `;
+                } else {
+                    // 未解鎖狀態：在主選單直接輸入站點解鎖碼
+                    card.innerHTML = `
+                        <div class="flex justify-between items-start">
+                            <div class="space-y-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
+                                        站點 ${orderIndex}
+                                    </span>
+                                    <span class="text-xs font-bold text-slate-700">
+                                        ${cp.name}
+                                    </span>
+                                </div>
+                                <div class="text-[11px] font-medium text-slate-500">
+                                    ${cp.subject}
+                                </div>
+                            </div>
+                            <span class="inline-flex items-center text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                <i class="fa-solid fa-lock mr-1"></i> 未解鎖
                             </span>
                         </div>
-                        <div class="text-[11px] font-medium text-slate-500">
-                            ${cp.subject}
+
+                        <div class="pt-1 border-t border-slate-100">
+                            <label class="block text-[11px] font-bold text-amber-900 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-key text-amber-600"></i> 輸入站點解鎖碼 (Station Code)：
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="text" id="code_input_${cp.id}" placeholder="例: MOON1" class="flex-1 bg-slate-50 border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-mono font-bold uppercase text-slate-800 focus:ring-2 focus:ring-amber-500 focus:bg-white focus:outline-none">
+                                <button onclick="unlockStation(${cp.id})" class="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-sm transition-all shrink-0 flex items-center gap-1">
+                                    <i class="fa-solid fa-unlock"></i> 解鎖
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        ${isDone 
-                            ? `<span class="inline-flex items-center text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
-                                <i class="fa-solid fa-circle-check mr-1"></i> 已完成
-                               </span>`
-                            : `<span class="inline-flex items-center text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                                挑戰 <i class="fa-solid fa-chevron-right ml-1 text-[10px]"></i>
-                               </span>`
-                        }
-                    </div>
-                `;
+                    `;
+                }
+
                 listEl.appendChild(card);
             });
         }
 
+        function unlockStation(cpId) {
+            const inputEl = document.getElementById(`code_input_${cpId}`);
+            if (!inputEl) return;
+            
+            const enteredCode = inputEl.value.trim().toUpperCase();
+            const cp = checkpoints.find(item => item.id === cpId);
+
+            if (!enteredCode) {
+                showModal('請輸入解鎖碼', '請輸入現場海報上的站點解鎖碼！\nPlease enter the Station Code from the poster!', 'warning');
+                return;
+            }
+
+            if (enteredCode === cp.code) {
+                if (!unlockedCPs.includes(cpId)) {
+                    unlockedCPs.push(cpId);
+                    localStorage.setItem('cp_unlocked', JSON.stringify(unlockedCPs));
+                }
+                showModal('解鎖成功！', `🎉 成功解鎖「${cp.name}」！\n現在可開啟查閱關卡題目與作答。`, 'success');
+                renderCPList();
+                openDetail(cpId);
+            } else {
+                showModal('解鎖碼錯誤', '❌ 解鎖碼不正確！\n請確認你已親臨該 Checkpoint 觀看現場海報！', 'error');
+            }
+        }
+
         function openDetail(id) {
+            // 防護：如尚未解鎖則無法打開
+            const isUnlocked = unlockedCPs.includes(id) || completedCPs.includes(id);
+            if (!isUnlocked) {
+                showModal('關卡未解鎖', '請先於主選單輸入正確的站點解鎖碼！', 'warning');
+                return;
+            }
+
             activeCPId = id;
             const cp = checkpoints.find(item => item.id === id);
             
@@ -412,13 +485,12 @@
             document.getElementById('cpTitle').innerText = cp.name;
             document.getElementById('cpSubject').innerText = cp.subject;
             document.getElementById('cpDesc').innerHTML = cp.desc;
-            document.getElementById('stationCodeInput').value = "";
 
             const area = document.getElementById('verificationArea');
             if (cp.type === 'media') {
                 area.innerHTML = `
                     <label class="block text-xs font-bold text-slate-700 mb-1">
-                        📷 步驟二：拍攝或上傳相片 (Upload Photo)
+                        📷 上傳相片 (Upload Photo)
                     </label>
                     <input type="file" id="mediaInput" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer" onchange="previewMedia(event)">
                     <div id="mediaPreview" class="mt-2"></div>
@@ -426,7 +498,7 @@
             } else {
                 area.innerHTML = `
                     <label class="block text-xs font-bold text-slate-700 mb-1">
-                        ✏️ 步驟二：輸入驗證答案 (Enter Answer)
+                        ✏️ 輸入驗證答案 (Enter Answer)
                     </label>
                     <input type="text" id="textInput" placeholder="在此輸入答案 Enter answer here" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium text-slate-800 focus:ring-2 focus:ring-amber-500 focus:outline-none">
                 `;
@@ -443,35 +515,25 @@
         }
 
         function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                if (!file) {
-                    reject(new Error("No file selected"));
-                    return;
-                }
+            return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.onerror = () => reject(new Error("FileReader error"));
                 reader.onload = (e) => {
                     const img = new Image();
-                    img.onerror = () => reject(new Error("Image loading error"));
                     img.onload = () => {
-                        try {
-                            const canvas = document.createElement('canvas');
-                            let width = img.width;
-                            let height = img.height;
-                            const max_size = 800;
-                            if (width > height) {
-                                if (width > max_size) { height = Math.round(height * (max_size / width)); width = max_size; }
-                            } else {
-                                if (height > max_size) { width = Math.round(width * (max_size / height)); height = max_size; }
-                            }
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            resolve(canvas.toDataURL('image/jpeg', 0.5));
-                        } catch (err) {
-                            reject(err);
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const max_size = 1024;
+                        if (width > height) {
+                            if (width > max_size) { height *= max_size / width; width = max_size; }
+                        } else {
+                            if (height > max_size) { width *= max_size / height; height = max_size; }
                         }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
                     };
                     img.src = e.target.result;
                 };
@@ -480,36 +542,30 @@
         }
 
         async function submitChallenge() {
-            // 保障機制：確保當前組別與隊長名稱正確讀取
-            if (!currentGroup) currentGroup = safeGetStorage('cp_group', '');
-            if (!currentLeader) currentLeader = safeGetStorage('cp_leader', '');
-
             const cp = checkpoints.find(item => item.id === activeCPId);
-            if (!cp) return;
-
-            const inputCode = document.getElementById('stationCodeInput').value.trim().toUpperCase();
-
-            // 1. 校對站點解鎖碼
-            if (inputCode !== cp.code) {
-                showModal('解鎖碼錯誤', '❌ 解鎖碼不正確！\n請確認你已親臨該 Checkpoint 觀看海報！', 'error');
-                return;
-            }
-
             const submitBtn = document.getElementById('submitBtn');
-            let answerVal = "";
-            let fileDataVal = "";
-            let cleanBase64 = "";
-            let fileNameVal = "";
-            let mimeTypeVal = "";
+            
+            // 清空隱藏欄位
+            document.getElementById('f_answer').value = "";
+            document.getElementById('f_fileData').value = "";
+            document.getElementById('f_fileName').value = "";
+            document.getElementById('f_mimeType').value = "";
 
-            // 2. 校對文字答案或照片上傳
+            document.getElementById('f_group').value = currentGroup;
+            document.getElementById('f_leader').value = currentLeader;
+            document.getElementById('f_cpId').value = cp.id;
+            document.getElementById('f_cpName').value = cp.name;
+            document.getElementById('f_type').value = cp.type;
+
+            // 校對文字答案或照片上傳
             if (cp.type === 'text') {
                 const val = document.getElementById('textInput').value.trim();
+                // 寬鬆答案校對 (去除空白，忽略大小寫)
                 if (val.replace(/\s+/g, '').toUpperCase() !== cp.answer.replace(/\s+/g, '').toUpperCase()) {
                     showModal('答案不正確', '❌ 答案不正確，請重新思考！\nIncorrect answer. Please try again!', 'error');
                     return;
                 }
-                answerVal = val;
+                document.getElementById('f_answer').value = val;
             } else {
                 const fileInput = document.getElementById('mediaInput');
                 if (!fileInput.files || fileInput.files.length === 0) {
@@ -520,83 +576,39 @@
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 正在處理照片...`;
 
-                try {
-                    fileDataVal = await compressImage(file);
-                    // 關鍵修復：分離 Data URI 標頭，提供純 Base64 字串給 Utilities.base64Decode 使用
-                    cleanBase64 = fileDataVal.includes(',') ? fileDataVal.split(',')[1] : fileDataVal;
-                    fileNameVal = "LTPSS_G" + currentGroup + "_CP" + cp.id + "_" + Date.now() + ".jpg";
-                    mimeTypeVal = "image/jpeg";
-                    answerVal = "Photo Upload: " + fileNameVal;
-                } catch (err) {
-                    console.error("Image processing error:", err);
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 提交答案完成本站 Submit`;
-                    showModal('照片處理失敗', '❌ 讀取照片失敗，請重新選擇照片或重新拍攝！', 'error');
-                    return;
-                }
+                const compressedBase64 = await compressImage(file);
+                document.getElementById('f_fileData').value = compressedBase64;
+                document.getElementById('f_fileName').value = "LTPSS_G" + currentGroup + "_" + Date.now() + ".jpg";
+                document.getElementById('f_mimeType').value = "image/jpeg";
             }
 
-            // 3. 提交至 Google Apps Script 雲端
+            // 提交至 Google Apps Script 雲端
             submitBtn.disabled = true;
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 正在同步至雲端...`;
 
-            // 相容性數據包：涵蓋所有常見後端變數名稱
-            const payload = {
-                group: currentGroup,
-                groupNum: currentGroup,
-                team: currentGroup,
-                leader: currentLeader,
-                leaderName: currentLeader,
-                cpId: cp.id,
-                cpName: cp.name,
-                type: cp.type,
-                answer: answerVal,
-                fileData: cleanBase64,
-                fileDataUrl: fileDataVal,
-                base64: cleanBase64,
-                photo: cleanBase64,
-                image: cleanBase64,
-                file: cleanBase64,
-                attachment: cleanBase64,
-                fileName: fileNameVal,
-                filename: fileNameVal,
-                mimeType: mimeTypeVal
-            };
-
-            // 使用 URLSearchParams 發送 POST Body，使 GAS e.parameter 可以直接抓取 Base64 數據
-            const formBody = new URLSearchParams();
-            for (const key in payload) {
-                formBody.append(key, payload[key]);
-            }
-            formBody.append('payload', JSON.stringify(payload));
-
+            const targetUrl = GAS_SCRIPT_URL.trim() || "/exec";
+            
             try {
-                if (GAS_SCRIPT_URL) {
-                    await fetch(GAS_SCRIPT_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
-                        },
-                        body: formBody.toString()
-                    });
-                }
+                // 使用隱藏 Frame 進行 cross-origin 安全 POST
+                const form = document.getElementById('gasForm');
+                form.action = targetUrl;
+                form.submit();
             } catch (err) {
-                console.warn("Cloud sync warning:", err);
+                console.warn("Form POST fallback triggered:", err);
             }
 
             // 紀錄本機進度
             if (!completedCPs.includes(activeCPId)) {
                 completedCPs.push(activeCPId);
-                safeSetStorage('cp_completed', JSON.stringify(completedCPs));
+                localStorage.setItem('cp_completed', JSON.stringify(completedCPs));
             }
 
             setTimeout(() => {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> 提交答案完成本站 Submit`;
-                showModal('挑戰成功！', '🎉 恭喜完成本站挑戰！數據與相片已紀錄。', 'success');
+                showModal('挑戰成功！', '🎉 恭喜完成本站挑戰！數據已紀錄。', 'success');
                 showMain();
-            }, 800);
+            }, 1000);
         }
 
         function showModal(title, message, type = 'info') {
@@ -636,12 +648,6 @@
 
         function executeResetGroup() {
             closeConfirmResetModal();
-            currentGroup = '';
-            currentLeader = '';
-            safeSetStorage('cp_group', '');
-            safeSetStorage('cp_leader', '');
-            if (document.getElementById('groupSelect')) document.getElementById('groupSelect').value = '';
-            if (document.getElementById('leaderName')) document.getElementById('leaderName').value = '';
             showLogin();
         }
     </script>
